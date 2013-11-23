@@ -80,7 +80,7 @@ class DefaultController extends Controller
                 "GROUP BY domains.id ".
                 "ORDER BY domains.name ASC";
         } else { // custom mailgateway
-            $query = "SELECT domains.id, domains.name, domain.destination ".
+            $query = "SELECT domains.id, domains.name, domains.destination ".
                 "FROM domains ".
                 "ORDER BY domains.name ASC";
         }
