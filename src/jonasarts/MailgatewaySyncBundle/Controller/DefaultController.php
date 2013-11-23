@@ -82,7 +82,7 @@ class DefaultController extends Controller
         } else { // custom mailgateway
             $query = "SELECT domains.id, domains.name ".
                 "FROM domains ".
-                "WHERE last_sync < :lastsync";
+                "ORDER BY domains.name ASC";
         }
 
         // query master server
@@ -90,9 +90,6 @@ class DefaultController extends Controller
         $statement = $connection->prepare($query);
         if ($config['mode'] == 'ppa') {
             $statement->bindValue('mailgateway', $config['gateway_server'].'.');
-        } else {
-            $d = new \DateTime("-1 hour");
-            $statement->bindValue('lastsync', $d->format('Y-m-d H:i:s'));
         }
         $result = $statement->execute();
 
