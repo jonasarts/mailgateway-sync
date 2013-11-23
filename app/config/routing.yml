@@ -1,0 +1,5 @@
+jonasarts_mailgateway_sync:
+    resource: "@jonasartsMailgatewaySyncBundle/Controller/"
+    type:     annotation
+    prefix:   /
+
