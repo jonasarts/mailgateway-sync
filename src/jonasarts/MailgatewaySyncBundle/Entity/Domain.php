@@ -211,6 +211,6 @@ class Domain
      */
     public function getChecksum()
     {
-        return hash('md5', $this->domainname);
+        return hash('md5', $this->domainname.":".$this->mailservername);
     }
 }

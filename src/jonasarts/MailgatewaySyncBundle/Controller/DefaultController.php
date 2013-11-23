@@ -121,7 +121,7 @@ class DefaultController extends Controller
 
                 if ($domain) { // domain record found -> update
 
-                    $csr = hash('md5', $record['name']); // remote cs
+                    $csr = hash('md5', $record['name'].":".$record['destination']); // remote cs
                     $csl = $domain->getChecksum(); // local cs
 
                     if ($csr != $csl) { // update domain.domainname & domain.destination & domain.last_sync
