@@ -184,20 +184,28 @@ class DefaultController extends Controller
 
     private function syncCustomDomains()
     {
+        if ($this->container->getParameter('mode') != 'custom') {
+            die('Not operating in custom mode!');
+        }
+
         $config = array();
-        $config['mode'] = 'custom'; // custom / ppa
-        $config['gateway_server'] = 'mx3.webfinity.ch'; // not needed
-        $config['postfix_mailsever'] = 'ct202.webfinity.ch'; // fallback value only
+        $config['mode'] = $this->container->getParameter('mode'); // custom / ppa
+        $config['gateway_server'] = ''; // not needed
+        $config['postfix_mailsever'] = ''; // not needed
 
         return $this->syncDomains($config);
     }
 
     private function syncPPADomains()
     {
+        if ($this->container->getParameter('mode') != 'ppa') {
+            die('Not operating in ppa mode!');
+        }
+
         $config = array();
-        $config['mode'] = 'ppa'; // custom / ppa
-        $config['gateway_server'] = 'mx1.webfinity.ch';
-        $config['postfix_mailsever'] = 'ct202.webfinity.ch';
+        $config['mode'] = $this->container->getParameter('mode'); // custom / ppa
+        $config['gateway_server'] = $this->container->getParameter('ppa.gateway_server');
+        $config['postfix_mailsever'] = $this->container->getParameter('ppa.postfix_mailserver');
 
         return $this->syncDomains($config);
     }
