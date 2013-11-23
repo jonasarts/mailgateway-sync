@@ -1,15 +1,17 @@
 <?php
 
-/**
- * CREATE OR REPLACE VIEW postfix_relay_domain AS
- * SELECT domainname
- * FROM domains
- * ORDER BY domainname ASC
- * 
- * CREATE OR REPLACE VIEW postfix_transport AS
- * SELECT domainname, CONCAT('smtp:[', mailservername,  ']') AS destination
- * FROM domains
- * ORDER BY domainname ASC
+/* 
+
+CREATE OR REPLACE VIEW postfix_relay_domain AS
+SELECT domainname
+FROM domains
+ORDER BY domainname ASC
+
+CREATE OR REPLACE VIEW postfix_transport AS
+SELECT domainname, CONCAT('smtp:[', mailservername,  ']') AS destination
+FROM domains
+ORDER BY domainname ASC
+
  */
 
 namespace jonasarts\MailgatewaySyncBundle\Entity;

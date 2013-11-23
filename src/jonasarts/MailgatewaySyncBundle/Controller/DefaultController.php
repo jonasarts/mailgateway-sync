@@ -115,14 +115,7 @@ class DefaultController extends Controller
                 // $domain->getChecksum();
 
                 // load destination server
-                if ($config['mode'] != 'ppa') {
-                    if ($domain) {
-                        $record['destination'] = $domain->getMailservername();
-                    } else {
-                        $mgs .= "Domain " . $record['id'] . " not found<br><br>\n";
-                        break;
-                    }
-                } else {
+                if ($config['mode'] == 'custom') {
                     $record['destination'] = $config['postfix_mailsever'];
                 }
 
@@ -193,7 +186,7 @@ class DefaultController extends Controller
     {
         $config = array();
         $config['mode'] = 'custom'; // custom / ppa
-        $config['gateway_server'] = 'mx3.webfinity.ch';
+        $config['gateway_server'] = 'mx3.webfinity.ch'; // not needed
         $config['postfix_mailsever'] = 'ct202.webfinity.ch'; // fallback value only
 
         return $this->syncDomains($config);
