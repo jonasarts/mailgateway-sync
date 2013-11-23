@@ -6,6 +6,13 @@ parameters:
     database_user:     root
     database_password: ~
 
+    database_driver_master:   pdo_mysql
+    database_host_master:     127.0.0.1
+    database_port_master:     ~
+    database_name_master:     symfony
+    database_user_master:     root
+    database_password_master: ~
+
     mailer_transport:  smtp
     mailer_host:       127.0.0.1
     mailer_user:       ~
