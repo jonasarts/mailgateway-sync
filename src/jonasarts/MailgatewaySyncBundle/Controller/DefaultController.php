@@ -223,13 +223,23 @@ class DefaultController extends Controller
     }
 
     /**
-     * @Route("/sync", name="sync")
-     * @Template()
+     * @Route("/sync-ppa", name="sync-ppa")
+     * @Template("jonasartsMailgatewaySyncBundle:Default:syncDomains.html.twig")
      */
-    public function syncDomainsAction()
+    public function syncPPADomainsAction()
     {
         $msg = $this->syncPPADomains();
-        //$msg = $this->syncCustomDomains();
+        
+        return array('msg' => $msg);
+    }
+
+    /**
+     * @Route("/sync-custom", name="sync-custom")
+     * @Template("jonasartsMailgatewaySyncBundle:Default:syncDomains.html.twig")
+     */
+    public function syncCustomDomainsAction()
+    {
+        $msg = $this->syncCustomDomains();
 
         return array('msg' => $msg);
     }
