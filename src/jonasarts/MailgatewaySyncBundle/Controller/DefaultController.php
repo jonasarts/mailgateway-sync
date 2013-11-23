@@ -115,7 +115,7 @@ class DefaultController extends Controller
                 // $domain->getChecksum();
 
                 // load destination server
-                if ($config['mode'] == 'custom') {
+                if ($config['mode'] == 'ppa') {
                     $record['destination'] = $config['postfix_mailsever'];
                 }
 
