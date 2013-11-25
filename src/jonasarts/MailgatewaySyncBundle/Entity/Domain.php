@@ -5,12 +5,12 @@
 CREATE OR REPLACE VIEW postfix_relay_domain AS
 SELECT domainname AS domain
 FROM domains
-ORDER BY domainname ASC
+ORDER BY domainname ASC;
 
 CREATE OR REPLACE VIEW postfix_transport AS
 SELECT domainname AS domain, CONCAT('smtp:[', mailservername,  ']') AS destination
 FROM domains
-ORDER BY domainname ASC
+ORDER BY domainname ASC;
 
  */
 

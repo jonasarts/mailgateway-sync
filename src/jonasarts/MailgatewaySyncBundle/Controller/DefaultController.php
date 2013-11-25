@@ -210,41 +210,60 @@ class DefaultController extends Controller
         return $this->syncDomains($config);
     }
 
-    private function syncMailScanner()
-    {
-
-    }
-
-    private function syncSpamAssassin()
-    {
-
-    }
-
     /**
+     * crontab: *|5 * * * * root curl -k -s -o /dev/null http://<domain>/sync-ppa
+     * 
      * @Route("/sync-ppa", name="sync-ppa")
-     * @Template("jonasartsMailgatewaySyncBundle:Default:syncDomains.html.twig")
+     * @Template("jonasartsMailgatewaySyncBundle:Default:sync.html.twig")
      */
     public function syncPPADomainsAction()
     {
+        $request = $this->getRequest();
+
+        $silent = true;
+        $param = $request->query->get('silent');
+        if ($param != null) {
+            $silent = (bool)$param == true;
+        }
+
         $msg = $this->syncPPADomains();
+
+        if ($silent) {
+            $msg = "PPA Domain Sync @ " . date('Y-m-d H:i:s') . " on " . $request->getHost();
+            $msg .= " for MX " . $this->container->getParameter('ppa.gateway_server');
+        }
         
         return array('msg' => $msg);
     }
 
     /**
+     * crontab: *|5 * * * * root curl -k -s -o /dev/null http://<domain>/sync-custom
+     * 
      * @Route("/sync-custom", name="sync-custom")
-     * @Template("jonasartsMailgatewaySyncBundle:Default:syncDomains.html.twig")
+     * @Template("jonasartsMailgatewaySyncBundle:Default:sync.html.twig")
      */
     public function syncCustomDomainsAction()
     {
+        $request = $this->getRequest();
+
+        $silent = true;
+        $param = $request->query->get('silent');
+        if ($param != null) {
+            $silent = (bool)$param == true;
+        }
+
         $msg = $this->syncCustomDomains();
+
+        if ($silent) {
+            $msg = "Custom Domain Sync  @ " . date('Y-m-d H:i:s') . " on " . $request->getHost();
+        }
 
         return array('msg' => $msg);
     }
 
     /**
      * @Route("/show-expired", name="show_expired")
-     * @Template()
+     * @Template("jonasartsMailgatewaySyncBundle:Default:sync.html.twig")
      */
     public function showExpiredDomainsAction()
     {
@@ -255,7 +274,7 @@ class DefaultController extends Controller
 
     /**
      * @Route("/delete-expired", name="delete_expired")
-     * @Template()
+     * @Template("jonasartsMailgatewaySyncBundle:Default:sync.html.twig")
      */
     public function deleteExpiredDomainsAction()
     {

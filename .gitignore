@@ -8,4 +8,6 @@
 /build/
 /vendor/
 /bin/
+/etc/
+/var/
 /composer.phar

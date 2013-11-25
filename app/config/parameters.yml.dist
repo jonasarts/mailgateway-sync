@@ -20,3 +20,7 @@ parameters:
 
     locale:            en
     secret:            ThisTokenIsNotSoSecretChangeIt
+
+    chroot:                 ~
+    ppa.gateway_server:     ~
+    ppa.postfix_mailserver: ~

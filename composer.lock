@@ -3,7 +3,7 @@
         "This file locks the dependencies of your project to a known state",
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
     ],
-    "hash": "e67df720e8a1a2e0e6df41d91d788e48",
+    "hash": "1db3ac1c27aff56c3fdf80219af10865",
     "packages": [
         {
             "name": "doctrine/annotations",
@@ -714,6 +714,52 @@
                 "sql"
             ],
             "time": "2013-04-26 18:42:52"
+        },
+        {
+            "name": "jonasarts/registry-bundle",
+            "version": "v1.0.1",
+            "target-dir": "jonasarts/Bundle/RegistryBundle",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/jonasarts/registry-bundle.git",
+                "reference": "4adcb68fa87e8fde7c0ef7ba429c1b8cf0c7a2c1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/jonasarts/registry-bundle/zipball/4adcb68fa87e8fde7c0ef7ba429c1b8cf0c7a2c1",
+                "reference": "4adcb68fa87e8fde7c0ef7ba429c1b8cf0c7a2c1",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0",
+                "symfony/framework-bundle": "~2.3"
+            },
+            "type": "symfony-bundle",
+            "autoload": {
+                "psr-0": {
+                    "jonasarts\\Bundle\\RegistryBundle": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jonas Hauser",
+                    "email": "symfony@jonasarts.com",
+                    "homepage": "http://www.jonasarts.com"
+                }
+            ],
+            "description": "A Registry for Symfony",
+            "homepage": "https://github.com/jonasarts/registry-bundle",
+            "keywords": [
+                "key",
+                "registry",
+                "store",
+                "value"
+            ],
+            "time": "2013-11-25 12:51:39"
         },
         {
             "name": "kriswallsmith/assetic",

@@ -20,9 +20,19 @@ class Configuration implements ConfigurationInterface
         $treeBuilder = new TreeBuilder();
         $rootNode = $treeBuilder->root('jonasarts_mailgateway_sync');
 
-        // Here you should define the parameters that are allowed to
-        // configure your bundle. See the documentation linked above for
-        // more information on that topic.
+        $rootNode
+            ->children()
+                ->enumNode('mode')
+                    ->values(array('ppa', 'custom'))
+                    ->isRequired()
+                    ->cannotBeEmpty()
+                    ->defaultValue('custom')
+                ->end()
+                ->booleanNode('debug')
+                    ->defaultFalse()
+                ->end()
+            ->end()
+        ;
 
         return $treeBuilder;
     }
