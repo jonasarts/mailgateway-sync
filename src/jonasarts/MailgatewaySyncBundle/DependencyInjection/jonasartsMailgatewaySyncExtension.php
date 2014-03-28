@@ -23,7 +23,6 @@ class jonasartsMailgatewaySyncExtension extends Extension
         $config = $this->processConfiguration($configuration, $configs);
 
         $container->setParameter('mode', $config['mode']);
-        $container->setParameter('debug', $config['debug']);
 
         $loader = new Loader\XmlFileLoader($container, new FileLocator(__DIR__.'/../Resources/config'));
         $loader->load('services.xml');

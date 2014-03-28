@@ -38,7 +38,7 @@ class DefaultController extends Controller
                 // "DELETE FROM `postfix_transport` WHERE `id` = ".$lo_row->id.";<br />\n";
                 // "DELETE FROM `sync` WHERE `id` = ".$lo_row->id.";<br />\n";
 
-                $msg .= "Delete domain (" . $domain->getId() . ") " . $domain->getDomainname() . " expired at " . $domain->getLastSync()->format('Y-m-d H:i:s') . "<br>\n";
+                $msg .= "Delete domain (" . $domain->getMasterId() . "/" . $domain->getAliasId() . ") " . $domain->getDomainname() . " expired at " . $domain->getLastSync()->format('Y-m-d H:i:s') . "<br>\n";
 
                 if ($config['remove']) {
                     $default_em->remove($domain);
@@ -73,42 +73,59 @@ class DefaultController extends Controller
         */
 
         if ($config['mode'] == 'ppa') { // ppa mailgateway
-            $query = "SELECT domains.id, domains.name ".
+            $query1 = "SELECT domains.id, domains.name ".
                 "FROM domains ".
                 "INNER JOIN dns_recs ON domains.dns_zone_id = dns_recs.dns_zone_id ".
                 "WHERE dns_recs.type = 'MX' AND dns_recs.val = :mailgateway ".
                 "GROUP BY domains.id ".
                 "ORDER BY domains.name ASC";
+            $query2 = "SELECT domain_aliases.dom_id AS id, domain_aliases.id AS aid, domain_aliases.name ".
+                "FROM domain_aliases ".
+                "INNER JOIN dns_recs ON domain_aliases.dns_zone_id = dns_recs.dns_zone_id ".
+                "WHERE dns_recs.type = 'MX' AND dns_recs.val = :mailgateway ".
+                "ORDER BY domain_aliases.name ASC";
         } else { // custom mailgateway
-            $query = "SELECT domains.id, domains.name, domains.destination ".
+            $query1 = "SELECT domains.id, domains.name, domains.destination ".
                 "FROM domains ".
                 "ORDER BY domains.name ASC";
         }
 
         // query master server
-        $connection = $master_em->getConnection();
-        $statement = $connection->prepare($query);
+        $connection1 = $master_em->getConnection();
+        $statement1 = $connection1->prepare($query1);
         if ($config['mode'] == 'ppa') {
-            $statement->bindValue('mailgateway', $config['gateway_server'].'.');
+            $statement1->bindValue('mailgateway', $config['mailgateway_server'].'.');
         }
-        $result = $statement->execute();
+        $statement1->execute();
+        $records = $statement1->fetchAll();
+
+        if ($config['mode'] == 'ppa') {
+            $connection2 = $master_em->getConnection();
+            $statement2 = $connection2->prepare($query2);
+            $statement2->bindValue('mailgateway', $config['mailgateway_server'].'.');
+            $statement2->execute();
+            $records = array_merge($records, $statement2->fetchAll());
+        }
 
         //echo "Query = ". $query ."<br>";
 
-        if ($result) {
-            $records = $statement->fetchAll();
-            
+        if (count($records) > 0) {
             $msg .= "Count = ". count($records) ."<br><br>\n";
             
             foreach ($records as $record) {
                 //var_dump($record);
 
+                if (!array_key_exists('aid', $record)) {
+                    $record['aid'] = 0;
+                }
+
                 $domain = $default_em->createQuery(
                     'SELECT d 
                     FROM jonasartsMailgatewaySyncBundle:Domain d
-                    WHERE d.master_id = :id'
+                    WHERE d.master_id = :id AND d.alias_id = :aid'
                     )
                     ->setParameter('id', $record['id'])
+                    ->setParameter('aid', $record['aid'])
                     ->getOneOrNullResult();
 
                 // load checksum
@@ -126,13 +143,13 @@ class DefaultController extends Controller
 
                     if ($csr != $csl) { // update domain.domainname & domain.destination & domain.last_sync
 
-                        $msg .= "Update " . $record['id'] . " domain " . $record['name'] . " transport smtp:[".$record['destination']."]<br>\n";
+                        $msg .= "Update domain (" . $record['id'] . "/" . $record['aid'] . ") " . $record['name'] . " transport smtp:[".$record['destination']."]<br>\n";
 
                         // "UPDATE postfix_relay_domain SET domain = %s WHERE master_id = %d"
                         // "UPDATE postfix_transport SET domain = %s, destination = 'smtp:[%s]' WHERE master_id = %d"
 
-                        $domain->setDomainname($record['name']);
-                        $domain->setMailservername($record['destination']);
+                        $domain->setDomainname(trim($record['name']));
+                        $domain->setMailservername(trim($record['destination']));
                         $domain->setLastSync(new \DateTime());
                         $default_em->persist($domain);
                         $default_em->flush();
@@ -140,7 +157,7 @@ class DefaultController extends Controller
                     } else { // only update domain.last_sync
 
                         $d = new \DateTime();
-                        $msg .= "Update domain (" . $record['id'] . ") " . $record['name'] . " last sync " . $d->format('Y-m-d H:i:s') . "<br>\n";
+                        $msg .= "Update domain (" . $record['id'] . "/" . $record['aid'] . ") " . $record['name'] . " last sync " . $d->format('Y-m-d H:i:s') . "<br>\n";
 
                         // "UPDATE `sync` SET `lastrun` = %s WHERE `master_id` = %s"
 
@@ -150,7 +167,7 @@ class DefaultController extends Controller
                     }
                 } else { // no domain record -> insert
 
-                    $msg .= "Insert domain (" . $record['id'] . ") " . $record['name'] . " transport smtp:[".$record['destination']."]<br>\n";
+                    $msg .= "Insert domain (" . $record['id'] . "/" . $record['aid'] . ") " . $record['name'] . " transport smtp:[".$record['destination']."]<br>\n";
 
                     // "INSERT INTO postfix_relay_domain (master_id, domain) VALUES (%d, '%s)"
                     // "INSERT INTO postfix_transport (master_id, domain, destination) VALUES (%d, %s, 'smtp:[%s]')"
@@ -190,7 +207,7 @@ class DefaultController extends Controller
 
         $config = array();
         $config['mode'] = $this->container->getParameter('mode'); // custom / ppa
-        $config['gateway_server'] = ''; // not needed
+        $config['mailgateway_server'] = ''; // not needed
         $config['postfix_mailsever'] = ''; // not needed
 
         return $this->syncDomains($config);
@@ -204,8 +221,8 @@ class DefaultController extends Controller
 
         $config = array();
         $config['mode'] = $this->container->getParameter('mode'); // custom / ppa
-        $config['gateway_server'] = $this->container->getParameter('ppa.gateway_server');
-        $config['postfix_mailsever'] = $this->container->getParameter('ppa.postfix_mailserver');
+        $config['mailgateway_server'] = $this->container->getParameter('mailgateway_server');
+        $config['postfix_mailsever'] = $this->container->getParameter('postfix_mailserver');
 
         return $this->syncDomains($config);
     }
@@ -226,12 +243,14 @@ class DefaultController extends Controller
             $silent = (bool)$param == true;
         }
 
+        set_time_limit(0);
+
         $msg = $this->syncPPADomains();
 
-        if ($silent) {
-            $msg = "PPA Domain Sync @ " . date('Y-m-d H:i:s') . " on " . $request->getHost();
-            $msg .= " for MX " . $this->container->getParameter('ppa.gateway_server');
-        }
+        $msg = "PPA Domain Sync @ " . date('Y-m-d H:i:s') .
+            " on " . $request->getHost() .
+            " for MX " . $this->container->getParameter('mailgateway_server') .
+            $msg;
         
         return array('msg' => $msg);
     }
@@ -252,12 +271,15 @@ class DefaultController extends Controller
             $silent = (bool)$param == true;
         }
 
+        set_time_limit(0);
+
         $msg = $this->syncCustomDomains();
 
-        if ($silent) {
-            $msg = "Custom Domain Sync  @ " . date('Y-m-d H:i:s') . " on " . $request->getHost();
-        }
-
+        $msg = "Custom Domain Sync  @ " . date('Y-m-d H:i:s') .
+            " on " . $request->getHost() .
+            " for MX " . $this->container->getParameter('mailgateway_server') .
+            $msg;
+        
         return array('msg' => $msg);
     }
 

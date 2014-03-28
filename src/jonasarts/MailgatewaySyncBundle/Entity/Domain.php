@@ -24,7 +24,7 @@ use Doctrine\ORM\Mapping as ORM;
  * 
  * @ORM\Entity
  * @ORM\Table(name="domains",
- *      uniqueConstraints={@ORM\UniqueConstraint(name="uix_master_id", columns={"master_id"}), @ORM\UniqueConstraint(name="uix_domainname", columns={"domainname"})},
+ *      uniqueConstraints={@ORM\UniqueConstraint(name="uix_master_id_alias_id", columns={"master_id", "alias_id"}), @ORM\UniqueConstraint(name="uix_domainname", columns={"domainname"})},
  *      indexes={@ORM\Index(name="ix_last_sync", columns={"last_sync"})}
  * )
  */
@@ -45,6 +45,16 @@ class Domain
      * @ORM\Column(name="master_id", type="integer")
      */
     private $master_id;
+
+    /**
+     * @var integer The alias id of the domain
+     * 
+     * If the record is a master domain, the alias_id is 0.
+     * If alias_id > 0, then the record is an alias domain.
+     *
+     * @ORM\Column(name="alias_id", type="integer")
+     */
+    private $alias_id;
 
     /**
      * @var string The domain name
@@ -86,15 +96,28 @@ class Domain
     public static function create($record)
     {
         $d = new Domain();
+        $d->master_id = 0;
+        $d->alias_id = 0;
+        $d->domainname = '';
+        $d->mailservername = '';
+
         if (array_key_exists('id', $record)) {
-            $d->master_id = $record['id'];
+            if (is_numeric($record['id'])) {
+                $d->master_id = $record['id'];
+            }
+        }
+        if (array_key_exists('aid', $record)) {
+            if (is_numeric($record['aid'])) {
+                $d->alias_id = $record['aid'];
+            }
         }
         if (array_key_exists('name', $record)) {
-            $d->domainname = $record['name'];
+            $d->domainname = trim($record['name']);
         }
         if (array_key_exists('destination', $record)) {
-            $d->mailservername = $record['destination'];
+            $d->mailservername = trim($record['destination']);
         }
+
         $d->last_sync = new \DateTime();
 
         return $d;
@@ -131,6 +154,29 @@ class Domain
     public function getMasterId()
     {
         return $this->master_id;
+    }
+
+    /**
+     * Set alias_id
+     *
+     * @param  integer $alias_id
+     * @return Domain
+     */
+    public function setAliasId($alias_id)
+    {
+        $this->alias_id = $alias_id;
+
+        return $this;
+    }
+
+    /**
+     * Get alias_id
+     *
+     * @return integer
+     */
+    public function getAliasId()
+    {
+        return $this->alias_id;
     }
 
     /**

@@ -10,25 +10,52 @@ use jonasarts\MailgatewaySyncBundle\Entity\Domain;
 
 class SpamAssassinController extends Controller
 {
-    private function syncSpamAssassin($config, $force = false)
+    private function getConfig()
+    {
+        $chroot = "";
+        if ($this->container->hasParameter('chroot')) {
+            $chroot = $this->container->getParameter('chroot');
+        }
+
+        $config = array();
+        $config['files'] = array();
+        $config['files']['spamassassin_rules'] = $chroot."/etc/mail/spamassassin/webfinity_rules.cf";
+
+        return $config;
+    }
+
+    private function checkSpamAssassin($config)
     {
         if ($this->container->getParameter('mode') != 'custom') {
             die('Not operating in custom mode!');
         }
 
-        // filesystem checks
-        if ($this->container->getParameter('debug')) {
-            if (!is_dir(dirname($config['files']['spamassassin_rules']))) {
-                die("Folder ".dirname($config['files']['spamassassin_rules'])." does not exist!");
-            }
-            if (!is_writable(dirname($config['files']['spamassassin_rules']))) { // check write permission
-                die("Folder ".dirname($config['files']['spamassassin_rules'])." is not writable!");
-            }
-            if (!file_exists($config['files']['spamassassin_rules'])) {
-                touch($config['files']['spamassassin_rules']);
-            } elseif (!is_writable($config['files']['spamassassin_rules'])) { // check write permission
-                die("Can not write file ".$config['files']['spamassassin_rules']);
-            }
+        $msg = "<h1>Spamassassin Check</h1>\n";
+
+        if (!is_dir(dirname($config['files']['spamassassin_rules']))) {
+            $msg .= "Folder ".dirname($config['files']['spamassassin_rules'])." does not exist!<br>\n";
+        } else {
+            $msg .= "Folder ".dirname($config['files']['spamassassin_rules'])." present.<br>\n";
+        }
+        //if (!is_writable(dirname($config['files']['spamassassin_rules']))) { // check write permission
+        //    die("Folder ".dirname($config['files']['spamassassin_rules'])." is not writable!");
+        //}
+        if (!file_exists($config['files']['spamassassin_rules'])) {
+            touch($config['files']['spamassassin_rules']);
+            $msg .= "File ".$config['files']['spamassassin_rules']." created.<br>\n";
+        } elseif (!is_writable($config['files']['spamassassin_rules'])) { // check write permission
+            $msg .= "Can not write file ".$config['files']['spamassassin_rules']."!<br>\n";
+        } else {
+            $msg .= "File ".$config['files']['spamassassin_rules']." present.<br>\n";
+        }
+
+        return $msg;
+    }
+
+    private function syncSpamAssassin($config, $force = false)
+    {
+        if ($this->container->getParameter('mode') != 'custom') {
+            die('Not operating in custom mode!');
         }
 
         $msg = "<h1>Sync Spamassassin</h1>\n";
@@ -149,6 +176,19 @@ class SpamAssassinController extends Controller
     }
 
     /**
+     * @Route("/check-sa", name="check_sa")
+     * @Template("jonasartsMailgatewaySyncBundle:Default:sync.html.twig")
+     */
+    public function checkSpamAssassinAction()
+    {
+        $config = $this->getConfig();
+
+        $msg = $this->checkSpamAssassin($config);
+
+        return array('msg' => $msg);
+    }
+
+    /**
      * crontab: *|5 * * * * root curl -k -s -o /dev/null http://<domain>/sync-sa
      * 
      * @Route("/sync-sa", name="sync_sa")
@@ -156,14 +196,7 @@ class SpamAssassinController extends Controller
      */
     public function syncSpamassassinAction()
     {
-        $chroot = "";
-        if ($this->container->hasParameter('chroot')) {
-            $chroot = $this->container->getParameter('chroot');
-        }
-
-        $config = array();
-        $config['files'] = array();
-        $config['files']['spamassassin_rules'] = $chroot."/etc/mail/spamassassin/webfinity_rules.cf";
+        $config = $this->getConfig();
 
         $request = $this->getRequest();
         
@@ -177,9 +210,9 @@ class SpamAssassinController extends Controller
 
         $msg = $this->syncSpamAssassin($config, $force);
 
-        if ($silent) {
-            $msg = "SpamAssassin Sync @ " . date('Y-m-d H:i:s') . " on " . $request->getHost();
-        }
+        $msg = "SpamAssassin Sync @ " . date('Y-m-d H:i:s') .
+            " on " . $request->getHost() .
+            $msg;
 
         return array('msg' => $msg);
     }

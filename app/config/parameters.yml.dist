@@ -21,6 +21,7 @@ parameters:
     locale:            en
     secret:            ThisTokenIsNotSoSecretChangeIt
 
-    chroot:                 ~
-    ppa.gateway_server:     ~
-    ppa.postfix_mailserver: ~
+    chroot:             ~
+    mode:               custom
+    mailgateway_server: ~
+    postfix_mailserver: ~

@@ -14,10 +14,12 @@ class MailScannerController extends Controller
     private function checkDirectory($directory)
     {
         if (!is_dir($directory)) {
-            die("Folder ".$directory." does not exist!");
+            return "Folder ".$directory." does not exist!<br>\n";
         }
         if (!is_writable($directory)) { // check write permission
-            die("Folder ".$directory." is not writable!");
+            return "Folder ".$directory." is not writable!<br>\n";
+        } else {
+            return "Folder ".$directory." present.<br>\n";
         }
     }
 
@@ -25,29 +27,62 @@ class MailScannerController extends Controller
     {
         if (!file_exists($file)) {
             touch($file);
+            return "File ".$file." created.<br>\n";
         } elseif (!is_writable($file)) { // check write permission
-            die("Can not write file ".$file);
+            return "Can not write file ".$file."!<br>\n";
+        } else {
+            return "File ".$file." present.<br>\n";
         }
     }
 
-    private function syncMailScanner($config, $force = false)
+    private function getConfig()
+    {
+        $chroot = "";
+        if ($this->container->hasParameter('chroot')) {
+            $chroot = $this->container->getParameter('chroot');
+        }
+
+        $config = array();
+        $config['path'] = array();
+        $config['path']['conf'] = $chroot."/etc/MailScanner/conf.d"; 
+        $config['path']['rules'] = $chroot."/etc/MailScanner/rules";
+        $config['path']['spam'] = $chroot."/etc/MailScanner/spam.bydomain";
+        $config['path']['blacklist'] = $chroot."/etc/MailScanner/spam.bydomain/blacklist";
+        $config['path']['whitelist'] = $chroot."/etc/MailScanner/spam.bydomain/whitelist";
+        $config['path']['quarantine'] = $chroot."/var/spool/MailScanner/quarantine";
+        $config['files'] = array();
+        $config['files']['mailscanner_rules'] = $chroot."/etc/MailScanner/conf.d/webfinity.conf";
+
+        return $config;
+    }
+
+    private function checkMailScanner($config)
     {
         if ($this->container->getParameter('mode') != 'custom') {
             die('Not operating in custom mode!');
         }
 
         // filesystem checks
-        if ($this->container->getParameter('debug')) {
-            $this->checkDirectory($config['path']['conf']);
-            $this->checkFile($config['files']['mailscanner_rules']);
+        $msg = "<h1>MailScanner Check</h1>\n";;
+    
+        //$msg .= $this->checkDirectory($config['path']['conf']);
+        $msg .= $this->checkFile($config['files']['mailscanner_rules']);
 
-            $this->checkDirectory($config['path']['rules']);
+        $msg .= $this->checkDirectory($config['path']['rules']);
 
-            $this->checkDirectory($config['path']['spam']);
-            $this->checkDirectory($config['path']['blacklist']);
-            $this->checkDirectory($config['path']['whitelist']);
+        $msg .= $this->checkDirectory($config['path']['spam']);
+        $msg .= $this->checkDirectory($config['path']['blacklist']);
+        $msg .= $this->checkDirectory($config['path']['whitelist']);
 
-            $this->checkDirectory($config['path']['quarantine']);
+        $msg .= $this->checkDirectory($config['path']['quarantine']);
+
+        return $msg;
+    }
+
+    private function syncMailScanner($config, $force = false)
+    {
+        if ($this->container->getParameter('mode') != 'custom') {
+            die('Not operating in custom mode!');
         }
 
         $msg = "<h1>Sync MailScanner</h1>\n";
@@ -279,6 +314,19 @@ class MailScannerController extends Controller
     }
 
     /**
+     * @Route("/check-ms", name="check_ms")
+     * @Template("jonasartsMailgatewaySyncBundle:Default:sync.html.twig")
+     */
+    public function checkMailScannerAction()
+    {
+        $config = $this->getConfig();
+
+        $msg = $this->checkMailScanner($config);
+
+        return array('msg' => $msg);
+    }
+
+    /**
      * crontab: *|5 * * * * root curl -k -s -o /dev/null http://<domain>/sync-ms
      * 
      * @Route("/sync-ms", name="sync_ms")
@@ -286,21 +334,7 @@ class MailScannerController extends Controller
      */
     public function syncMailScannerAction()
     {
-        $chroot = "";
-        if ($this->container->hasParameter('chroot')) {
-            $chroot = $this->container->getParameter('chroot');
-        }
-
-        $config = array();
-        $config['path'] = array();
-        $config['path']['conf'] = $chroot."/etc/MailScanner/conf.d"; 
-        $config['path']['rules'] = $chroot."/etc/MailScanner/rules";
-        $config['path']['spam'] = $chroot."/etc/MailScanner/spam.bydomain";
-        $config['path']['blacklist'] = $chroot."/etc/MailScanner/spam.bydomain/blacklist";
-        $config['path']['whitelist'] = $chroot."/etc/MailScanner/spam.bydomain/whitelist";
-        $config['path']['quarantine'] = $chroot."/var/spool/MailScanner/quarantine";
-        $config['files'] = array();
-        $config['files']['mailscanner_rules'] = $chroot."/etc/MailScanner/conf.d/webfinity.conf";
+        $config = $this->getConfig();
         
         $request = $this->getRequest();
         
@@ -314,9 +348,9 @@ class MailScannerController extends Controller
 
         $msg = $this->syncMailScanner($config, $force);
 
-        if ($silent) {
-            $msg = "MailScanner Sync @ " . date('Y-m-d H:i:s') . " on " . $request->getHost();
-        }
+        $msg = "MailScanner Sync @ " . date('Y-m-d H:i:s') .
+            " on " . $request->getHost() .
+            $msg;
 
         return array('msg' => $msg);
     }
