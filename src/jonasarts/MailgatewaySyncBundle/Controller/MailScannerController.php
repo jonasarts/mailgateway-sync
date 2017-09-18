@@ -62,6 +62,10 @@ class MailScannerController extends Controller
             die('Not operating in custom mode!');
         }
 
+        if (is_null($this->container->getParameter('mailgateway_server'))) {
+            die('Missing mailgateway_server parameter!');
+        }
+
         // filesystem checks
         $msg = "<h1>MailScanner Check</h1>\n";;
     
@@ -84,6 +88,12 @@ class MailScannerController extends Controller
         if ($this->container->getParameter('mode') != 'custom') {
             die('Not operating in custom mode!');
         }
+
+        if (is_null($this->container->getParameter('mailgateway_server'))) {
+            die('Missing mailgateway_server parameter!');
+        }
+
+        $host = $this->container->getParameter('mailgateway_server');
 
         $msg = "<h1>Sync MailScanner</h1>\n";
 
@@ -171,13 +181,13 @@ class MailScannerController extends Controller
 
             foreach ($records as $record) {
                 $csr = hash('md5', $record['list']); // remote checksum
-                $csl = $rm->RegistryRead($record['id'], 'mailscanner', 'blacklist', 'str'); // local checksum
+                $csl = $rm->RegistryRead($record['id'], $host.'/mailscanner', 'blacklist', 'str'); // local checksum
 
                 if ($csl) { // update
                     if (($csr != $csl) || $force) { // update
                         file_put_contents($config['path']['blacklist']."/".$record['name'], $record['list']);
                         
-                        $rm->RegistryWrite($record['id'], 'mailscanner', 'blacklist', 'str', $csr);
+                        $rm->RegistryWrite($record['id'], $host.'/mailscanner', 'blacklist', 'str', $csr);
                         
                         $msg .= "MailScanner Blacklist for ".$record['name']." updated<br>";
                     } else {
@@ -186,7 +196,7 @@ class MailScannerController extends Controller
                 } else { // insert
                     file_put_contents($config['path']['blacklist']."/".$record['name'], $record['list']);
 
-                    $rm->RegistryWrite($record['id'], 'mailscanner', 'blacklist', 'str', $csr);
+                    $rm->RegistryWrite($record['id'], $host.'/mailscanner', 'blacklist', 'str', $csr);
 
                     $msg .= "MailScanner Blacklist for ".$record['name']." created<br>";
                 }
@@ -207,13 +217,13 @@ class MailScannerController extends Controller
 
             foreach ($records as $record) {
                 $csr = hash('md5', $record['list']); // remote checksum
-                $csl = $rm->RegistryRead($record['id'], 'mailscanner', 'whitelist', 'str'); // local checksum
+                $csl = $rm->RegistryRead($record['id'], $host.'/mailscanner', 'whitelist', 'str'); // local checksum
 
                 if ($csl) { // update
                     if (($csr != $csl) || $force) { // update
                         file_put_contents($config['path']['whitelist']."/".$record['name'], $record['list']);
                         
-                        $rm->RegistryWrite($record['id'], 'mailscanner', 'whitelist', 'str', $csr);
+                        $rm->RegistryWrite($record['id'], $host.'/mailscanner', 'whitelist', 'str', $csr);
                         
                         $msg .= "MailScanner Whitelist for ".$record['name']." updated<br>";
                     } else {
@@ -222,7 +232,7 @@ class MailScannerController extends Controller
                 } else { // insert
                     file_put_contents($config['path']['whitelist']."/".$record['name'], $record['list']);
 
-                    $rm->RegistryWrite($record['id'], 'mailscanner', 'whitelist', 'str', $csr);
+                    $rm->RegistryWrite($record['id'], $host.'/mailscanner', 'whitelist', 'str', $csr);
 
                     $msg .= "MailScanner Whitelist for ".$record['name']." created<br>";
                 }
@@ -268,13 +278,13 @@ class MailScannerController extends Controller
             $rule_config .= "FromOrTo:\tdefault\t".$rule->getDefault();
         
             $csr = hash('md5', $rule_config); // remote checksum
-            $csl = $rm->RegistryRead($rule->getId(), 'mailscanner', 'checksum', 'str'); // local checksum
+            $csl = $rm->RegistryRead($rule->getId(), $host.'/mailscanner', 'checksum', 'str'); // local checksum
 
             if ($csl) { // update
                 if (($csr != $csl) || $force) { // update
                     file_put_contents($config['path']['rules']."/".$rule->getFilename(), $rule_config);
                     
-                    $rm->RegistryWrite($rule->getId(), 'mailscanner', 'checksum', 'str', $csr);
+                    $rm->RegistryWrite($rule->getId(), $host.'/mailscanner', 'checksum', 'str', $csr);
 
                     $msg .= "MailScanner Rule ".$rule->getFilename()." updated<br>";
                 } else {
@@ -283,20 +293,20 @@ class MailScannerController extends Controller
             } else { // insert
                 file_put_contents($config['path']['rules']."/".$rule->getFilename(), $rule_config);
 
-                $rm->RegistryWrite($rule->getId(), 'mailscanner', 'checksum', 'str', $csr);
+                $rm->RegistryWrite($rule->getId(), $host.'/mailscanner', 'checksum', 'str', $csr);
 
                 $msg .= "MailScanner Rule ".$rule->getFilename()." created<br>";
             }
         } // rules
         
         $csr = hash('md5', $mailscanner_config); // remote checksum
-        $csl = $rm->SystemRead('mailscanner', 'checksum', 'str'); // local checksum
+        $csl = $rm->SystemRead($host.'/mailscanner', 'checksum', 'str'); // local checksum
 
         if ($csl) { // update
             if (($csr != $csl) || $force) { // update
                 file_put_contents($config['files']['mailscanner_rules'], $mailscanner_config);
 
-                $rm->SystemWrite('mailscanner', 'checksum', 'str', $csr);
+                $rm->SystemWrite($host.'/mailscanner', 'checksum', 'str', $csr);
 
                 $msg .= "MailScanner Config updated<br>\n";
             } else {
@@ -305,7 +315,7 @@ class MailScannerController extends Controller
         } else { // insert
             file_put_contents($config['files']['mailscanner_rules'], $mailscanner_config);
 
-            $rm->SystemWrite('mailscanner', 'checksum', 'str', $csr);
+            $rm->SystemWrite($host.'/mailscanner', 'checksum', 'str', $csr);
 
             $msg .= "MailScanner Config created<br>\n";
         }

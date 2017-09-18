@@ -30,6 +30,10 @@ class SpamAssassinController extends Controller
             die('Not operating in custom mode!');
         }
 
+        if (is_null($this->container->getParameter('mailgateway_server'))) {
+            die('Missing mailgateway_server parameter!');
+        }
+
         $msg = "<h1>Spamassassin Check</h1>\n";
 
         if (!is_dir(dirname($config['files']['spamassassin_rules']))) {
@@ -57,6 +61,12 @@ class SpamAssassinController extends Controller
         if ($this->container->getParameter('mode') != 'custom') {
             die('Not operating in custom mode!');
         }
+
+        if (is_null($this->container->getParameter('mailgateway_server'))) {
+            die('Missing mailgateway_server parameter!');
+        }
+
+        $host = $this->container->getParameter('mailgateway_server');
 
         $msg = "<h1>Sync Spamassassin</h1>\n";
 
@@ -151,14 +161,14 @@ class SpamAssassinController extends Controller
         // get checksums
         $rm = $this->get('registry_manager'); // get registy service
         $csr = hash('md5', $data); // remote checksum
-        $csl = $rm->SystemRead('spamassassin', 'checksum', 'str'); // local checksum
+        $csl = $rm->SystemRead($host.'/spamassassin', 'checksum', 'str'); // local checksum
 
         // write spamassassin config file
         if ($csl) { // update
             if (($csr != $csl) || $force) { // update
                 file_put_contents($config['files']['spamassassin_rules'], $data);
 
-                $rm->SystemWrite('spamassassin', 'checksum', 'str', $csr);
+                $rm->SystemWrite($host.'/spamassassin', 'checksum', 'str', $csr);
 
                 $msg .= "SpamAssassin rules updated<br>\n";
             } else {
@@ -167,7 +177,7 @@ class SpamAssassinController extends Controller
         } else { // insert
             file_put_contents($config['files']['spamassassin_rules'], $data);
 
-            $rm->SystemWrite('spamassassin', 'checksum', 'str', $csr);
+            $rm->SystemWrite($host.'/spamassassin', 'checksum', 'str', $csr);
 
             $msg .= "SpamAssassin rules created<br>\n";
         }
